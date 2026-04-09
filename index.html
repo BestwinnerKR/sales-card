@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영업 상담 카드</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+  font-size: 13px;
+  background: #f0f0f0;
+  padding: 20px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 16px;
+  color: #555;
+}
+
+.error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 16px;
+  color: #c0392b;
+}
+
+.card {
+  width: 210mm;
+  min-height: 297mm;
+  background: white;
+  margin: 0 auto;
+  padding: 12mm 14mm;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 2.5px solid #1a1a2e;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+.company-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+  letter-spacing: -0.5px;
+}
+.header-sub {
+  font-size: 10.5px;
+  color: #555;
+  margin-top: 3px;
+}
+.header-meta {
+  text-align: right;
+  color: #555;
+  font-size: 10.5px;
+  line-height: 1.6;
+}
+.status-badge {
+  display: inline-block;
+  background: #1a1a2e;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  margin-left: 6px;
+}
+
+.section { margin-bottom: 8px; }
+.section-title {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: white;
+  background: #1a1a2e;
+  padding: 3px 8px;
+  letter-spacing: 0.5px;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid #ccc;
+  border-top: none;
+}
+
+.cell {
+  padding: 8px 10px;
+  border-right: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  min-height: 52px;
+}
+.cell:nth-child(4n) { border-right: none; }
+.cell.span-2 { grid-column: span 2; }
+.cell.span-3 { grid-column: span 3; border-right: none; }
+.cell.span-4 { grid-column: span 4; border-right: none; }
+
+.cell-label { font-size: 10px; color: #888; margin-bottom: 4px; }
+.cell-value { font-size: 13px; font-weight: 600; color: #1a1a2e; line-height: 1.5; }
+.cell-value.small { font-size: 12px; font-weight: 400; }
+.cell-value.good { color: #27ae60; }
+.cell-value.bad { color: #c0392b; }
+
+.memo-box {
+  border: 1px solid #ccc;
+  border-top: none;
+  min-height: 70mm;
+}
+
+@media print {
+  body { background: white; padding: 0; }
+  .card { box-shadow: none; margin: 0; padding: 10mm 12mm; }
+  @page { size: A4; margin: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">데이터를 불러오는 중...</div>
+<div class="error" id="error" style="display:none"></div>
+<div id="card-container" style="display:none"></div>
+
+<script>
+var BASE_ID = 'apprEBnfaoRetskA2';
+var TABLE_ID = 'tblODCStLyLhaPt9q';
+
+function getParam(name) {
+  var url = new URL(window.location.href);
+  return url.searchParams.get(name);
+}
+
+function v(fields, key) {
+  var val = fields[key];
+  if (val === undefined || val === null || val === '') return '—';
+  return val;
+}
+
+function formatMoney(num) {
+  if (!num) return '—';
+  var uk = Math.floor(num / 100000000);
+  var chun = Math.floor((num % 100000000) / 10000000);
+  var result = '';
+  if (uk > 0) result += uk + '억 ';
+  if (chun > 0) result += chun + '천';
+  return result.trim() || num.toLocaleString() + '원';
+}
+
+function parseLoans(text) {
+  if (!text) return [];
+  return text.split('\n')
+    .map(function(l) { return l.trim(); })
+    .filter(function(l) {
+      if (!l) return false;
+      var idx = l.indexOf(':');
+      if (idx === -1) return false;
+      return l.substring(idx + 1).trim() !== '';
+    })
+    .map(function(l) {
+      var idx = l.indexOf(':');
+      return { name: l.substring(0, idx).trim(), value: l.substring(idx + 1).trim() };
+    });
+}
+
+function parseLines(text) {
+  if (!text) return '—';
+  var lines = text.split('\n')
+    .map(function(l) { return l.trim(); })
+    .filter(function(l) {
+      if (!l) return false;
+      var idx = l.indexOf(':');
+      if (idx === -1) return true;
+      return l.substring(idx + 1).trim() !== '';
+    });
+  return lines.length ? lines.join('<br>') : '—';
+}
+
+function buildCard(f) {
+  var loans = parseLoans(f['정책자금 대출 현황'] || '');
+  var taxDebt = f['세금체납 여부'] || '—';
+  var taxClass = taxDebt === '유' ? 'bad' : (taxDebt === '무' ? 'good' : '');
+  var openYear = f['개업년도'] ? String(f['개업년도']).substring(0, 4) + '년' : '—';
+  var sitePrice = f['사업장 시세'] ? formatMoney(f['사업장 시세']) : '—';
+  var salesLines = parseLines(f['3개년 매출'] || '');
+  var debtLines = parseLines(f['기타대출액'] || '');
+  var creditLines = (f['신용점수'] || '').split('\n').map(function(l){return l.trim();}).filter(Boolean).join('<br>') || '—';
+  var phonejournal = (f['기관 전화일지'] || '').replace(/\n/g, '<br>') || '—';
+
+  // 대출현황 셀 (최대 3개)
+  var loanCells = '';
+  for (var i = 0; i < 3; i++) {
+    if (loans[i]) {
+      loanCells += '<div class="cell"><div class="cell-label">' + loans[i].name + '</div><div class="cell-value small">' + loans[i].value + '</div></div>';
+    } else {
+      loanCells += '<div class="cell"><div class="cell-label">—</div><div class="cell-value">—</div></div>';
+    }
+  }
+
+  return '<div class="card">' +
+
+    '<div class="header">' +
+      '<div>' +
+        '<div class="company-name">' + v(f, '업체명') + '</div>' +
+        '<div class="header-sub">' + v(f, '업종') + ' &nbsp;|&nbsp; ' + v(f, '권리 주체') + '사업자 &nbsp;|&nbsp; 개업 ' + openYear + '</div>' +
+      '</div>' +
+      '<div class="header-meta">TM일: ' + v(f, 'TM일') + '<br>상태: <span class="status-badge">' + v(f, '상태') + '</span></div>' +
+    '</div>' +
+
+    '<div class="section">' +
+      '<div class="section-title">기본 정보</div>' +
+      '<div class="grid-4">' +
+        '<div class="cell"><div class="cell-label">대표자명</div><div class="cell-value">' + v(f, '대표자명') + '</div></div>' +
+        '<div class="cell"><div class="cell-label">대표 연락처</div><div class="cell-value">' + v(f, 'Phone') + '</div></div>' +
+        '<div class="cell"><div class="cell-label">담당자명 / 직함</div><div class="cell-value">' + v(f, '담당자명/직함') + '</div></div>' +
+        '<div class="cell"><div class="cell-label">담당자 연락처</div><div class="cell-value">' + v(f, '담당자 연락처') + '</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="section">' +
+      '<div class="section-title">재무 현황</div>' +
+      '<div class="grid-4">' +
+        '<div class="cell"><div class="cell-label">3개년 매출</div><div class="cell-value small">' + salesLines + '</div></div>' +
+        '<div class="cell"><div class="cell-label">4대보험 직원수</div><div class="cell-value">' + (f['4대보험 직원수'] ? f['4대보험 직원수'] + '명' : '—') + '</div></div>' +
+        '<div class="cell"><div class="cell-label">신용점수</div><div class="cell-value small">' + creditLines + '</div></div>' +
+        '<div class="cell"><div class="cell-label">사업장</div><div class="cell-value small">' + v(f, '사업장 소유') + ' / ' + sitePrice + '</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="section">' +
+      '<div class="section-title">부채 현황</div>' +
+      '<div class="grid-4">' +
+        '<div class="cell"><div class="cell-label">기타대출 종류</div><div class="cell-value small">' + (f['기타대출 종류'] ? f['기타대출 종류'].join(', ') : '—') + '</div></div>' +
+        '<div class="cell span-2"><div class="cell-label">기타대출액</div><div class="cell-value small">' + debtLines + '</div></div>' +
+        '<div class="cell"><div class="cell-label">세금체납</div><div class="cell-value ' + taxClass + '">' + taxDebt + '</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="section">' +
+      '<div class="section-title">정책자금 현황</div>' +
+      '<div class="grid-4">' +
+        '<div class="cell"><div class="cell-label">정책자금 경험</div><div class="cell-value">' + v(f, '정책자금 경험 유무') + '</div></div>' +
+        loanCells +
+      '</div>' +
+      '<div class="grid-4">' +
+        '<div class="cell span-2"><div class="cell-label">자금 목적</div><div class="cell-value small">' + v(f, '자금 목적') + '</div></div>' +
+        '<div class="cell span-2"><div class="cell-label">특허 / 인증</div><div class="cell-value small">' + v(f, '특허/인증') + '</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="section">' +
+      '<div class="section-title">기관 전화일지</div>' +
+      '<div class="grid-4">' +
+        '<div class="cell span-4" style="min-height:36px"><div class="cell-value small">' + phonejournal + '</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="section">' +
+      '<div class="section-title">상담 메모</div>' +
+      '<div class="memo-box"></div>' +
+    '</div>' +
+
+  '</div>';
+}
+
+// 메인 실행
+var recordId = getParam('recordId');
+var TOKEN = getParam('token');
+if (!recordId || !TOKEN) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('error').style.display = 'flex';
+  document.getElementById('error').textContent = 'recordId 또는 token이 없습니다.';
+} else {
+  fetch('https://api.airtable.com/v0/' + BASE_ID + '/' + TABLE_ID + '/' + recordId, {
+    headers: { 'Authorization': 'Bearer ' + TOKEN }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (!data.fields) throw new Error('레코드를 찾을 수 없습니다.');
+    document.getElementById('loading').style.display = 'none';
+    var container = document.getElementById('card-container');
+    container.innerHTML = buildCard(data.fields);
+    container.style.display = 'block';
+    document.title = (data.fields['업체명'] || '상담 카드');
+  })
+  .catch(function(err) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = 'flex';
+    document.getElementById('error').textContent = '오류: ' + err.message;
+  });
+}
+</script>
+</body>
+</html>
