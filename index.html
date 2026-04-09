@@ -210,7 +210,10 @@ function buildCard(f) {
         '<div class="company-name">' + v(f, '업체명') + '</div>' +
         '<div class="header-sub">' + v(f, '업종') + ' &nbsp;|&nbsp; ' + v(f, '권리 주체') + '사업자 &nbsp;|&nbsp; 개업 ' + openYear + '</div>' +
       '</div>' +
-      '<div class="header-meta">TM일: ' + v(f, 'TM일') + '<br>상태: <span class="status-badge">' + v(f, '상태') + '</span></div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">' +
+        '<img src="https://bestwinnerkr.github.io/sales-card/logo.png" style="height:36px;object-fit:contain">' +
+        '<div class="header-meta">TM일: ' + v(f, 'TM일') + '&nbsp;&nbsp;상태: <span class="status-badge">' + v(f, '상태') + '</span></div>' +
+      '</div>' +
     '</div>' +
 
     '<div class="section">' +
