@@ -104,7 +104,7 @@ body {
   padding: 8px 10px;
   border-right: 1px solid #ddd;
   border-bottom: 1px solid #ddd;
-  min-height: 52px;
+  min-height: 64px;
 }
 .cell:nth-child(4n) { border-right: none; }
 .cell.span-2 { grid-column: span 2; }
@@ -112,7 +112,7 @@ body {
 .cell.span-4 { grid-column: span 4; border-right: none; }
 
 .cell-label { font-size: 10px; color: #888; margin-bottom: 4px; }
-.cell-value { font-size: 13px; font-weight: 600; color: #1a1a2e; line-height: 1.5; }
+.cell-value { font-size: 15px; font-weight: 600; color: #1a1a2e; line-height: 1.5; }
 .cell-value.small { font-size: 12px; font-weight: 400; }
 .cell-value.good { color: #27ae60; }
 .cell-value.bad { color: #c0392b; }
@@ -263,13 +263,6 @@ function buildCard(f) {
       '<div class="grid-4">' +
         '<div class="cell span-2"><div class="cell-label">자금 목적</div><div class="cell-value small">' + v(f, '자금 목적') + '</div></div>' +
         '<div class="cell span-2"><div class="cell-label">특허 / 인증</div><div class="cell-value small">' + v(f, '특허/인증') + '</div></div>' +
-      '</div>' +
-    '</div>' +
-
-    '<div class="section">' +
-      '<div class="section-title">기관 전화일지</div>' +
-      '<div class="grid-4">' +
-        '<div class="cell span-4" style="min-height:36px"><div class="cell-value small">' + phonejournal + '</div></div>' +
       '</div>' +
     '</div>' +
 
