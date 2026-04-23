@@ -204,7 +204,7 @@ function buildCard(f) {
   var salesLines = parseLines(f['3개년 매출'] || '');
   var debtLines = parseLines(f['기타대출액'] || '');
   var creditLines = (f['신용점수'] || '').split('\n').map(function(l){return l.trim();}).filter(Boolean).join('<br>') || '—';
-  var phoneConsult = (f['전화 상담 내역'] || '').trim();
+  var phoneConsult = (f['상담 내역'] || '').trim();
 
   // 대출현황 셀 (최대 3개)
   var loanCells = '';
