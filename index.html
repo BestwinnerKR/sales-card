@@ -124,17 +124,9 @@ body {
 }
 .memo-phone {
   padding: 8px 10px;
-  background: #f7f7f7;
-  border-bottom: 1px solid #ddd;
   font-size: 12px;
   color: #333;
   line-height: 1.7;
-  white-space: pre-wrap;
-}
-.memo-phone-label {
-  font-size: 10px;
-  color: #888;
-  margin-bottom: 4px;
 }
 
 @media print {
@@ -283,7 +275,7 @@ function buildCard(f) {
     '<div class="section">' +
       '<div class="section-title">상담 메모</div>' +
       '<div class="memo-box">' +
-        (phoneConsult ? '<div class="memo-phone"><div class="memo-phone-label">전화 상담 내역</div>' + phoneConsult.replace(/\n/g, '<br>') + '</div>' : '') +
+        (phoneConsult ? '<div class="memo-phone">' + phoneConsult.replace(/\n/g, '<br>') + '</div>' : '') +
       '</div>' +
     '</div>' +
 
